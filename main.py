@@ -1,33 +1,34 @@
-"""Write the 24 November 2026 front-page image to the output directory.
+"""Entry point for the news-image-20261124 submission.
 
-Standard library only. Copies news.png (drawn by draw_news.py) next to
-this file into MAKEFUN_OUTPUT_DIR (or /output) as entry.png, refusing
-files over the competition's 1 MiB limit. Deterministic: the same input
-bytes always produce the same output bytes.
+The front page is rendered ahead of time by render_frontpage.py and kept
+in this repository as news.png. This program copies it to the path the
+competition harness reads, /output/entry.png.
 """
+
 import os
 import shutil
 import sys
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-SRC = os.path.join(HERE, "news.png")
-OUT_DIR = os.environ.get("MAKEFUN_OUTPUT_DIR") or "/output"
-OUT = os.path.join(OUT_DIR, "entry.png")
-LIMIT = 1048576
+
+def entry_image_path():
+    here = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(here, "news.png")
 
 
 def main():
-    size = os.path.getsize(SRC)
-    if size > LIMIT:
-        print(f"news.png is {size} bytes, over the 1 MiB limit",
+    source = entry_image_path()
+    if not os.path.isfile(source):
+        print("missing image: " + source, file=sys.stderr)
+        return 1
+    os.makedirs("/output", exist_ok=True)
+    target = os.path.join("/output", "entry.png")
+    shutil.copyfile(source, target)
+    size = os.path.getsize(target)
+    if size > 1024 * 1024:
+        print("image over the 1 MiB cap: " + str(size) + " bytes",
               file=sys.stderr)
         return 1
-    os.makedirs(OUT_DIR, exist_ok=True)
-    shutil.copyfile(SRC, OUT)
-    if os.path.getsize(OUT) != size:
-        print("copy size mismatch", file=sys.stderr)
-        return 1
-    print(f"wrote {OUT} ({size} bytes)")
+    print("wrote " + target + " (" + str(size) + " bytes)")
     return 0
 
 
